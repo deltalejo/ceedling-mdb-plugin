@@ -2,8 +2,8 @@
 
 Microchip Debugger (MDB) simulator test fixture for [Ceedling](https://github.com/ThrowTheSwitch/Ceedling).
 
-The plugin automatically add the appropriate test fixture to run tests using}
-MDB simulator.
+The plugin automatically add the appropriate test fixture to run tests using MDB
+simulator.
 
 ## Installation
 
