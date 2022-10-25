@@ -1,4 +1,5 @@
 unless MDB_OUTPUT_PATH.nil?
+  CLOBBER.include(File.join(MDB_OUTPUT_PATH, '*'))
   directory(MDB_OUTPUT_PATH)
   task :directories => MDB_OUTPUT_PATH
 end
