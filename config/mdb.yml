@@ -1,5 +1,9 @@
 ---
 :mdb:
+  :test_fixture: true
   :hwtool: sim
-  :options: {}
+  :tools_properties:
+    :sim:
+      :uart1io.uartioenabled: true
+      :uart1io.output: window
 ...
