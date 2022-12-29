@@ -1,92 +1,82 @@
 require 'ceedling/plugin'
+require 'mdb_defaults'
 
-MDB_ROOT_NAME   = 'mdb'.freeze
-MDB_SYM         = MDB_ROOT_NAME.to_sym
-MDB_OUTPUT_PATH = File.join(PROJECT_BUILD_ROOT, MDB_ROOT_NAME)
+MDB_ROOT_NAME       = 'mdb'.freeze
+MDB_SYM             = MDB_ROOT_NAME.to_sym
+
+MDB_CMD_FILE_SUFFIX = '_cmd.txt'.freeze
+
+def mdb_form_cmd_filepath(filepath)
+  return ceedling_form_filepath(MDB_OUTPUT_PATH, filepath, '') + MDB_CMD_FILE_SUFFIX
+end
 
 class Mdb < Plugin
   def setup
-    @config = @ceedling[:setupinator].config_hash[MDB_SYM]
+    project_config = @ceedling[:setupinator].config_hash
+    mdb_defaults = {
+      :tools => {
+        :mdb => DEFAULT_MDB_TOOL
+      }
+    }
+    @ceedling[:configurator_builder].populate_defaults(project_config, mdb_defaults)
     
-    raise unless @ceedling[:configurator_validator].exists?(@config, :executable)
+    @config = project_config[MDB_SYM]
+    @tool = project_config[:tools][MDB_SYM]
+    
     raise unless @ceedling[:configurator_validator].exists?(@config, :device)
     raise unless @ceedling[:configurator_validator].exists?(@config, :hwtool)
     
-    if (@config[:executable] =~ RUBY_STRING_REPLACEMENT_PATTERN)
-      @config[:executable].replace(@ceedling[:system_wrapper].module_eval(@config[:executable]))
-    end
-    if (@config[:device] =~ RUBY_STRING_REPLACEMENT_PATTERN)
-      @config[:device].replace(@ceedling[:system_wrapper].module_eval(@config[:device]))
-    end
-    if (@config[:hwtool] =~ RUBY_STRING_REPLACEMENT_PATTERN)
-      @config[:hwtool].replace(@ceedling[:system_wrapper].module_eval(@config[:hwtool]))
+    [:device, :hwtool].each do |key|
+      if (@config[key] =~ RUBY_STRING_REPLACEMENT_PATTERN)
+        @config[key].replace(@ceedling[:system_wrapper].module_eval(@config[key]))
+      end
     end
     
-    update_config(executable: @config[:executable], device: @config[:device], hwtool: @config[:hwtool])
+    mdb_config = {
+      :mdb => {
+        :output_path => File.join(PROJECT_BUILD_ROOT, MDB_ROOT_NAME)
+      },
+      :tools => {
+        :mdb => @tool
+      }
+    }
+    mdb_config[:tools][:test_fixture] = @tool if @config[:test_fixture]
+    @ceedling[:configurator].build_supplement(project_config, mdb_config)
   end
   
   def update_config(**kwargs)
     @config.merge!(kwargs)
-    config_hash = @ceedling[:configurator_builder].flattenify({MDB_SYM => @config})
-    @ceedling[:configurator].replace_flattened_config(config_hash)
+    project_config = @ceedling[:setupinator].config_hash
+    @ceedling[:configurator].build_supplement(project_config, {:mdb => @config})
   end
   
   def form_cmd_filepath(filepath)
-    return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + '_cmd.txt')
+    return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + MDB_CMD_FILE_SUFFIX)
   end
   
-  def form_stdout_filepath(filepath)
-    return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + '_stdout.txt')
-  end
-  
-  def form_stderr_filepath(filepath)
-    return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + '_stderr.txt')
-  end
-  
-  def form_serialout_filepath(filepath)
-    return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + '_serialout.txt')
-  end
-  
-  def pre_test_fixture_execute(arg_hash)
-    executable = arg_hash[:executable]
+  def pre_test(test)
+    return unless @config[:test_fixture]
     
-    cmd_file = form_cmd_filepath(executable)
-    stdout_file = form_stdout_filepath(executable)
-    stderr_file = form_stderr_filepath(executable)
-    serialout_file = form_serialout_filepath(executable)
-    
-    write_command_file(executable)
-    File.delete(serialout_file) if File.exists?(serialout_file)
-    
-    arg_hash[:tool] = {
-      :executable => MDB_EXECUTABLE,
-      :arguments => [cmd_file, ">#{stdout_file}", "&& cat #{serialout_file}"],
-      :stderr_redirect => :auto
-    }
+    Rake.application[MDB_ROOT_NAME + '_deps'].invoke
+    write_command_file(test)
   end
   
   private
   
-  def write_command_file(executable)
-    cmd_file = form_cmd_filepath(executable)
-    serialout_file = form_serialout_filepath(executable)
-    tool_options_const = "#{MDB_ROOT_NAME}_#{MDB_HWTOOL}_options".upcase
-    
-    options = {
-      'uart1io.output' => 'file',
-      'uart1io.uartioenabled' => true,
-      'uart1io.outputfile' => "#{serialout_file}"
-    }
-    options.merge!(Object.const_get(tool_options_const)) if Object.const_defined?(tool_options_const)
-    options.merge!(MDB_OPTIONS)
+  def write_command_file(test)
+    exec_file = @ceedling[:file_path_utils].form_test_executable_filepath(test)
+    cmd_file = form_cmd_filepath(test)
+    device = @config[:device]
+    hwtool = @config[:hwtool]
+    tool_properties = @config[:tools_properties].fetch(hwtool.to_sym, {})
     
     File.open(cmd_file, 'w') do |f|
-      f.puts("device #{MDB_DEVICE}")
-      f.puts("hwtool #{MDB_HWTOOL}")
-      options.each do |key, val|
+      f.puts("device #{device}")
+      tool_properties.each do |key, val|
         f.puts "set #{key} #{val}"
       end
-      f.puts("program #{executable}")
+      f.puts("hwtool #{hwtool}")
+      f.puts("program #{exec_file}")
       f.puts('run')
       f.puts('wait')
       f.puts('quit')
