@@ -67,6 +67,9 @@ class Mdb < Plugin
   def pre_test_fixture_execute(arg_hash)
     return unless @config[:test_fixture]
     
+    @fixture_arguments = @fixture[:arguments]
+    @fixture[:arguments] = Array.new(@fixture[:arguments])
+    
     if @config[:hwtool] != 'sim'
       raise 'Please specify serial port.' unless @config[:serialport][:port]
       
@@ -86,6 +89,12 @@ class Mdb < Plugin
       @tool, [], form_cmd_filepath(arg_hash[:executable])
     )
     @fixture[:arguments] << mdb_command_line[:line]
+  end
+  
+  def post_test_fixture_execute(arg_hash)
+    return unless @config[:test_fixture]
+    
+    @fixture[:arguments] = @fixture_arguments
   end
   
   private
