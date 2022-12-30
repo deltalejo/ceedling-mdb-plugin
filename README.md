@@ -1,9 +1,12 @@
 # Microchip Debugger (MDB) Ceedling Plugin
 
-Microchip Debugger (MDB) simulator test fixture for [Ceedling](https://github.com/ThrowTheSwitch/Ceedling).
+Microchip Debugger (MDB) test fixture for [Ceedling](https://github.com/ThrowTheSwitch/Ceedling).
 
-The plugin automatically add the appropriate test fixture to run tests using MDB
-simulator.
+By default the plugin will override the test fixture tool, taking care of
+running the tests with MDB and reporting their output to Ceedling.
+You don't have to worry about figuring out how to tell ceedling to run MDB and
+grab its output, you just have to add and enable the plugin in your project and
+then you can start running your tests with MDB.
 
 ## Installation
 
@@ -23,7 +26,7 @@ $ cd ~/some/place/for/plugins
 $ git clone https://github.com/deltalejo/mdb-ceedling-plugin.git mdb
 ```
 
-### Enable the plugin
+### Add plugin load path
 
 Add the plugins path to your `project.yml` to tell Ceedling where to find
 them if you have not done it yet. Then add `mdb` plugin to the enabled
@@ -33,23 +36,72 @@ plugins list:
 :plugins:
   :load_paths:
     - ~/some/place/for/plugins
-  :enabled:
-    - mdb
 ```
 
 ## Usage
 
-Add `mdb` section to your `project.yml` specifyng the path to the MDB executable
-and the target device:
+Add `mdb` plugin to the enabled plugins list.
 
 ```yaml
-:mdb:
-  :executable: /some/place/in/your/computer/mdb.sh
-  :device: PICXXXXXXX
+:plugins:
+  :enabled:
+    - mdb
 ```
 
-Run tests. *e.g.*:
+make sure the MDB executable is available in your `PATH`. For example, running
+
+```shell
+$ mdb -h
+```
+
+whould print out mdb help dialog. *e.g.*:
+
+```
+Usage: mdb [options] [commandFile]
+Options:
+  -h, --help                 Show this help dialog
+  -f, --file-name fileName   Set the name of the log file, defaults to "MPLABXlog.xml"
+  -d, --log-dir   directory  Set the log output directory, defaults to system TEMP directory
+  -l, --log-level logLevel   Set the log level, defaults to INFO
+
+  Log Level options:
+    OFF
+    SEVERE 
+    WARNING 
+    INFO -- default
+    CONFIG 
+    FINE 
+    FINER 
+    FINEST 
+    ALL
+```
+
+### Run tests on simulator
+
+By default the plugin will setup MDB to use **sim** as the **hwtool** and to
+redirect **UART1** output to *stdout*, so Ceedling can grab the results.
+
+You just run your tests as usually. *e.g.*:
 
 ```shell
 $ ceedling test:all
+```
+
+### Run tests on target
+
+Are you sure?
+
+This require some explaining but also some work by your side.
+
+## Configuration
+
+Add `mdb` section to your `project.yml`. For example, default settings are:
+
+```yaml
+:mdb:
+  :hwtool: sim
+  :hwtools_properties:
+    :sim:
+      :uart1io.uartioenabled: true
+      :uart1io.output: window
 ```
