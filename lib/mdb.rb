@@ -57,15 +57,11 @@ class Mdb < Plugin
     return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + MDB_CMD_FILE_SUFFIX)
   end
   
-  def pre_test(test)
+  def pre_test_fixture_execute(arg_hash)
     return unless @config[:test_fixture]
     
     Rake.application[MDB_ROOT_NAME + '_deps'].invoke
-    write_command_file(test)
-  end
-  
-  def pre_test_fixture_execute(arg_hash)
-    return unless @config[:test_fixture]
+    write_command_file(arg_hash[:executable])
     
     @fixture_arguments = @fixture[:arguments]
     @fixture[:arguments] = Array.new(@fixture[:arguments])
@@ -85,10 +81,13 @@ class Mdb < Plugin
       end
     end
     
-    mdb_command_line = @ceedling[:tool_executor].build_command_line(
+    mdb_command = @ceedling[:tool_executor].build_command_line(
       @tool, [], form_cmd_filepath(arg_hash[:executable])
     )
-    @fixture[:arguments] << mdb_command_line[:line]
+    @fixture[:arguments] << mdb_command[:line]
+    
+    @ceedling[:streaminator].stdout_puts("MDB command: #{mdb_command}", Verbosity::DEBUG)
+    @ceedling[:streaminator].stdout_puts("MDB fixture: #{@fixture}", Verbosity::DEBUG)
   end
   
   def post_test_fixture_execute(arg_hash)
@@ -99,9 +98,10 @@ class Mdb < Plugin
   
   private
   
-  def write_command_file(test)
-    exec_file = @ceedling[:file_path_utils].form_test_executable_filepath(test)
-    cmd_file = form_cmd_filepath(test)
+  def write_command_file(exec)
+    cmd_file = form_cmd_filepath(exec)
+    @ceedling[:streaminator].stdout_puts("Creating #{cmd_file}...", Verbosity::NORMAL)
+    
     device = @config[:device]
     hwtool = @config[:hwtool]
     tool_properties = @config[:hwtools_properties].fetch(hwtool.to_sym, {})
@@ -112,7 +112,7 @@ class Mdb < Plugin
         f.puts "set #{key} #{val}"
       end
       f.puts("hwtool #{hwtool}")
-      f.puts("program #{exec_file}")
+      f.puts("program #{exec}")
       f.puts('run')
       f.puts('wait')
       f.puts('quit')
