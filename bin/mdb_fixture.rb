@@ -49,6 +49,7 @@ Open3.popen3(*ARGV) do |mdb_in, mdb_out, mdb_err, mdb_thr|
   end
   
   if (port = options.delete(:port))
+    options.transform_keys! {|key| key.to_s}
     serial_thr = Thread.new do
       SerialPort.open(port, options) do |sp|
         $stdout << sp.gets while true
