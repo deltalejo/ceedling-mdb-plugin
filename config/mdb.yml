@@ -2,8 +2,13 @@
 :mdb:
   :test_fixture: true
   :hwtool: sim
-  :tools_properties:
+  :hwtools_properties:
     :sim:
       :uart1io.uartioenabled: true
       :uart1io.output: window
+  :serialport:
+    :baudrate: 115200
+    :data_bits: 8
+    :stop_bits: 1
+    :parity: :none
 ...
