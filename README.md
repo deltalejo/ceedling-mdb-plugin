@@ -48,7 +48,8 @@ Add `mdb` plugin to the enabled plugins list.
     - mdb
 ```
 
-make sure the MDB executable is available in your `PATH`. For example, running
+make sure the MDB executable is available in your `PATH`.
+For example, running
 
 ```shell
 $ mdb -h
@@ -74,6 +75,13 @@ Options:
     FINER 
     FINEST 
     ALL
+```
+
+Add `mdb` section to your `project.yml` and specify the device:
+
+```yaml
+:mdb:
+  :device: PIC16F84A
 ```
 
 ### Run tests on simulator
