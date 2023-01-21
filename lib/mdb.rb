@@ -84,7 +84,7 @@ class Mdb < Plugin
     mdb_command = @ceedling[:tool_executor].build_command_line(
       @tool, [], form_cmd_filepath(arg_hash[:executable])
     )
-    @fixture[:arguments] << mdb_command[:line]
+    @fixture[:arguments] << '--' << mdb_command[:line]
     
     @ceedling[:streaminator].stdout_puts("MDB command: #{mdb_command}", Verbosity::DEBUG)
     @ceedling[:streaminator].stdout_puts("MDB fixture: #{@fixture}", Verbosity::DEBUG)

@@ -17,8 +17,11 @@ options = {
   :parity => SerialPort::NONE
 }
 
+serialport_args = ARGV.take_while {|item| item.strip != "--"}
+mdb_args = ARGV[(serialport_args.length + 1)..-1]
+
 OptionParser.new do |parser|
-  parser.banner = "Usage: #{File.basename($0)} [options] mdb [mdb arguments]"
+  parser.banner = "Usage: #{File.basename($0)} [options] -- <mdb> [mdb arguments]"
   
   parser.on('--port [PORT]', String)
   parser.on('--baud [BAUDRATE]', Integer)
@@ -27,11 +30,11 @@ OptionParser.new do |parser|
   parser.on('--parity [PARITY]') do |parity|
     options[:parity] = PARITIES[parity.to_sym]
   end
-end.parse!(into: options)
+end.parse!(serialport_args, into: options)
 
-raise OptionParser::MissingArgument, 'mdb' if ARGV.empty?
+raise OptionParser::MissingArgument, 'mdb' if mdb_args.empty?
 
-Open3.popen3(*ARGV) do |mdb_in, mdb_out, mdb_err, mdb_thr|
+Open3.popen3(*mdb_args) do |mdb_in, mdb_out, mdb_err, mdb_thr|
   Thread.new do
     until mdb_out.eof?
       line = mdb_out.gets
