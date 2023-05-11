@@ -1,6 +1,7 @@
 ---
 :mdb:
   :test_fixture: true
+  :breakpoints: []
   :hwtool: sim
   :hwtools_properties:
     :sim:

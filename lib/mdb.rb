@@ -5,8 +5,9 @@ MDB_ROOT_NAME       = 'mdb'.freeze
 MDB_SYM             = MDB_ROOT_NAME.to_sym
 MDB_FIXTURE_SYM     = (MDB_ROOT_NAME + '_fixture').to_sym
 
-MDB_FIXTURE_SCRIPT  = 'mdb_fixture.rb'.freeze
+MDB_OUTPUT_PATH     = File.join(PROJECT_BUILD_ROOT, MDB_ROOT_NAME)
 MDB_FIXTURE_PATH    = File.expand_path(File.join(File.dirname(__FILE__), '..', 'bin')).freeze
+MDB_FIXTURE_SCRIPT  = 'mdb_fixture.rb'.freeze
 MDB_FIXTURE         = File.join(MDB_FIXTURE_PATH, MDB_FIXTURE_SCRIPT).freeze
 MDB_CMD_FILE_SUFFIX = '_cmd.txt'.freeze
 
@@ -35,9 +36,6 @@ class Mdb < Plugin
     end
     
     mdb_config = {
-      :mdb => {
-        :output_path => File.join(PROJECT_BUILD_ROOT, MDB_ROOT_NAME)
-      },
       :tools => {
         :mdb => @tool,
         :mdb_fixture => @fixture
@@ -105,14 +103,18 @@ class Mdb < Plugin
     device = @config[:device]
     hwtool = @config[:hwtool]
     tool_properties = @config[:hwtools_properties].fetch(hwtool.to_sym, {})
+    breakpoints = @config[:breakpoints]
     
     File.open(cmd_file, 'w') do |f|
       f.puts("device #{device}")
-      tool_properties.each do |key, val|
+      tool_properties&.each do |key, val|
         f.puts "set #{key} #{val}"
       end
       f.puts("hwtool #{hwtool}")
       f.puts("program #{exec}")
+      breakpoints&.each do |breakpoint|
+        f.puts("break #{breakpoint}")
+      end
       f.puts('run')
       f.puts('wait')
       f.puts('quit')
