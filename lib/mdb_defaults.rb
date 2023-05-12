@@ -1,5 +1,5 @@
 DEFAULT_MDB_TOOL = {
-  :executable => (ENV['MDB'].nil? ? FilePathUtils.os_executable_ext('mdb') : ENV['MDB'].split[0]).freeze,
+  :executable => (ENV['MDB'].nil? ? 'mdb'.ext(SystemWrapper.windows? ? '.bat' : '') : ENV['MDB'].split[0]).freeze,
   :name => 'default_mdb'.freeze,
   :stderr_redirect => StdErrRedirect::NONE.freeze,
   :background_exec => BackgroundExec::NONE.freeze,
