@@ -15,9 +15,10 @@ project and run your tests on the simulator (and maybe the target).
   - [Timeout](#timeout)
   - [Disable test fixture](#disable-test-fixture)
 - [Usage](#usage)
-  - [XC8 projects](#xc8-projects)
-  - [XC16 projects](#xc16-projects)
-  - [XC32 projects](#xc32-projects)
+  - [Simulator](#simulator)
+    - [XC8 projects](#xc8-projects)
+    - [XC16 projects](#xc16-projects)
+    - [XC32 projects](#xc32-projects)
   - [Configuration bits](#configuration-bits)
 
 ## Installation
@@ -127,6 +128,8 @@ desired, the test fixture overwrite can be disabled:
 
 ## Usage
 
+### Simulator
+
 By default the plugin will setup **mdb** to use **sim** (simulator) as the
 **hwtool** and to redirect **UART 1** output to *stdout*, so Ceedling can grab
 the results.
@@ -137,7 +140,7 @@ You just need to run your tests as usually. *e.g.*:
 $ ceedling test:all
 ```
 
-### XC8 projects
+#### XC8 projects
 
 For XC8 projects, extra setup must be carried out so tests output is redirected
 to an UART and captured by the simulator.
@@ -219,7 +222,13 @@ void putch(char c)
 }
 ```
 
-Add the test support paths and files to `project.yml`:
+Complete the stubs inside `uart.c` accordingly to your target device.
+
+See the [Toolset Customization](https://github.com/ThrowTheSwitch/Unity/blob/master/docs/UnityConfigurationGuide.md#toolset-customization)
+section in Unity Configuration Guide for more info.
+
+Add the test support paths and files to `project.yml`.
+e.g.:
 
 ```yaml
 :paths:
@@ -239,7 +248,8 @@ Tell Unity to use the configuration file:
     - UNITY_INCLUDE_CONFIG_H
 ```
 
-Set breakpoint on appropriate place so simulation actually halts:
+Set breakpoint on appropriate place so simulation actually halts.
+e.g.:
 
 ```yaml
 :mdb:
@@ -247,22 +257,26 @@ Set breakpoint on appropriate place so simulation actually halts:
     - uart_end
 ```
 
-### XC16 projects
+*Note: If you are using a PIC18 device, you may want to disable extended
+instruction set. See [Configuration bits](#configuration-bits) for more info.*
+
+#### XC16 projects
 
 No known extra steps/setup required.
 
-### XC32 projects
+#### XC32 projects
 
 No known extra steps/setup required.
 
 ### Configuration bits
 
-Some times it may be needed to set some configuration bits so the simulation
-runs properly, for example, disable extended instruction set for PIC18 devices
-as the XC8 compiler does not support it.
+Some times it may be needed to set some configuration bits so the tests run
+properly, for example, disable extended instruction set for PIC18 devices as the
+XC8 compiler does not support it.
 
 Locate the test support directory for your project, e.g. `test/support`, and
-create a source files where configuration bits will be set:
+create a source files where configuration bits will be set.
+e.g.:
 
 ##### **`config_bits.c`**
 ```c
@@ -270,7 +284,8 @@ create a source files where configuration bits will be set:
 #pragma config XINST = OFF
 ```
 
-Add the test support path and file to `project.yml`:
+Add the test support path and file to `project.yml`.
+e.g.:
 
 ```yaml
 :paths:
