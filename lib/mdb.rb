@@ -104,6 +104,7 @@ class Mdb < Plugin
     hwtool = @config[:hwtool]
     tool_properties = @config[:hwtools_properties].fetch(hwtool.to_sym, {})
     breakpoints = @config[:breakpoints]
+    timeout = @config[:timeout].nil? ? '' : " #{@config[:timeout]}"
     
     File.open(cmd_file, 'w') do |f|
       f.puts("device #{device}")
@@ -116,7 +117,7 @@ class Mdb < Plugin
         f.puts("break #{breakpoint}")
       end
       f.puts('run')
-      f.puts('wait')
+      f.puts('wait' + timeout)
       f.puts('quit')
     end
   end

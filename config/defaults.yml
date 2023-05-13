@@ -2,6 +2,7 @@
 :mdb:
   :test_fixture: true
   :breakpoints: []
+  :timeout: null
   :hwtool: sim
   :hwtools_properties:
     :sim:
