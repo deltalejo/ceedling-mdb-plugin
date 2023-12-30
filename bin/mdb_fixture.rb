@@ -39,8 +39,9 @@ Open3.popen3(*mdb_args) do |mdb_in, mdb_out, mdb_err, mdb_thr|
     until mdb_out.eof?
       line = mdb_out.gets
       $stdout << line
-      if line =~ /Do you .+ to continue\?/
-        mdb_in.puts 'yes'
+      if line =~ /[[:alpha:]]+ you [[:alpha:]]+ to continue\?/i
+        answer = (line =~ /Target device ID \(.*?\) is an invalid device ID/i)? 'no' : 'yes'
+        mdb_in.puts answer
       end
     end
   end
