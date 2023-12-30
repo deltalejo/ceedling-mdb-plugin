@@ -4,7 +4,9 @@ DEFAULT_MDB_TOOL = {
   :stderr_redirect => StdErrRedirect::NONE.freeze,
   :background_exec => BackgroundExec::NONE.freeze,
   :optional => false.freeze,
-  :arguments => ['${1}'].freeze
+  :arguments => [
+    '${1}'.freeze
+  ].freeze
 }
 
 DEFAULT_MDB_FIXTURE_TOOL = {
@@ -13,5 +15,7 @@ DEFAULT_MDB_FIXTURE_TOOL = {
   :stderr_redirect => StdErrRedirect::NONE.freeze,
   :background_exec => BackgroundExec::NONE.freeze,
   :optional => false.freeze,
-  :arguments => ['#{MDB_FIXTURE}'].freeze
+  :arguments => [
+    '#{MDB_FIXTURE}'.freeze
+  ].freeze
 }
