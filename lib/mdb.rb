@@ -35,7 +35,7 @@ class Mdb < Plugin
     raise unless @ceedling[:configurator_validator].exists?(@config, :hwtool)
     
     [:device, :hwtool].each do |key|
-      if (@config[key] =~ RUBY_STRING_REPLACEMENT_PATTERN)
+      if @config[key] =~ RUBY_STRING_REPLACEMENT_PATTERN
         @config[key].replace(@ceedling[:system_wrapper].module_eval(@config[key]))
       end
     end
