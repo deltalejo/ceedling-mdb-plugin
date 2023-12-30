@@ -4,22 +4,28 @@ Add Microchip Debugger (MDB) test fixture to your
 [Ceedling](https://github.com/ThrowTheSwitch/Ceedling)
 project and run your tests on the simulator (and maybe the target).
 
+<!-- TOC ignore:true -->
 ## Contents
+
+<!-- TOC -->
 
 - [Installation](#installation)
 - [Enable the plugin](#enable-the-plugin)
 - [Configuration](#configuration)
-  - [Basic configuration](#basic-configuration)
-  - [Simulator options](#simulator-options)
-  - [Breakpoints](#breakpoints)
-  - [Timeout](#timeout)
-  - [Disable test fixture](#disable-test-fixture)
+	- [Basic configuration](#basic-configuration)
+	- [Simulator options](#simulator-options)
+	- [Breakpoints](#breakpoints)
+	- [Timeout](#timeout)
+	- [Disable test fixture](#disable-test-fixture)
+	- [Debug tool](#debug-tool)
+	- [Serial port](#serial-port)
 - [Usage](#usage)
-  - [Simulator](#simulator)
-    - [XC8 projects](#xc8-projects)
-    - [XC16 projects](#xc16-projects)
-    - [XC32 projects](#xc32-projects)
-  - [Configuration bits](#configuration-bits)
+	- [Configuration bits](#configuration-bits)
+	- [UART support](#uart-support)
+	- [Simulator](#simulator)
+	- [Target](#target)
+
+<!-- /TOC -->
 
 ## Installation
 
@@ -84,7 +90,7 @@ Specify simulator options used with the *set* command.
 
 ```yaml
 :mdb:
-  :hwtools_properties:
+  :tools:
     :sim: # 'sim' is the debug tool name given to the hwtool command
       :uart1io.uartioenabled: true # Enable UART 1 I/O
       :uart1io.output: window # Print UART 1 output on console
@@ -101,7 +107,7 @@ e.g:
   :breakpoints:
     - filename:linenumber [passCount] # Sets a breakpoint at the specified source line number.
     - "*address [passCount]" # Sets a breakpoint at an absolute address.
-    - function name [passCount] # Sets a breakpoint at the beginning of the function.
+    - function_name [passCount] # Sets a breakpoint at the beginning of the function.
 ```
 
 ### Timeout
@@ -126,25 +132,90 @@ desired, the test fixture overwrite can be disabled:
   :test_fixture: false
 ```
 
-## Usage
+### Debug tool
 
-### Simulator
+Specify hardware tool (debugger) to be used to program the target device and run
+the tests. Also, set up tool properties used with the *set* command.
 
-By default the plugin will setup **mdb** to use **sim** (simulator) as the
-**hwtool** and to redirect **UART 1** output to *stdout*, so Ceedling can grab
-the results.
-
-You just need to run your tests as usually. *e.g.*:
-
-```shell
-$ ceedling test:all
+```yaml
+:mdb:
+  :hwtool: snap
+  :tools:
+    :snap:
+      :programoptions.pgmspeed: Max
 ```
 
-#### XC8 projects
+The actual tool used can be overiden from command line.
+Properties for all tools that may be used can be specified and the corresponding
+ones to the actual tool used will be applied.
+e.g.:
 
-For XC8 projects, extra setup must be carried out so tests output is redirected
-to an UART and captured by the simulator.
-To achieve this, some test support files need to be created.
+```yaml
+:mdb:
+  :tools:
+    :pickit4:
+      :programoptions.pgmspeed: Max
+    :snap:
+      :programoptions.pgmspeed: Max
+```
+
+### Serial port
+
+Running tests on target hardware is supported by using a serial port (UART) to
+get the results from the target.
+As it is usual with this kind of communication,
+both sides (host and target) must agreed on the protocol settings to be used.
+
+Specify host side settings. e.g.:
+
+```yaml
+---
+:mdb:
+  :serialport:
+    :port: /dev/ttyUSB0 # As this is likely to change, it is recommended to
+    # leave this out and instead specify the port from command line.
+    :baudrate: 115200 # Default value
+    :data_bits: 8 # Default value
+    :stop_bits: 1 # Default value
+    :parity: :none # Default value
+...
+```
+
+## Usage
+
+### Configuration bits
+
+Some times it may be needed to set some configuration bits so the tests run
+properly, for example, disable extended instruction set for PIC18 devices as the
+XC8 compiler does not support it.
+
+Locate the test support directory for your project, e.g. `test/support`, and
+create a source files where configuration bits will be set.
+e.g.:
+
+##### **`config_bits.c`**
+```c
+// Disable extended instruction set on PIC18 devices
+#pragma config XINST = OFF
+```
+
+Add the test support path and file to `project.yml`.
+e.g.:
+
+```yaml
+:paths:
+  :support:
+    - test/support
+
+:files:
+  :support:
+    - config_bits.c
+```
+
+### UART support
+
+When using the simulator for XC8 projects or running tests on target hardware,
+some extra set up is needed so tests results can be gathered.
 
 Locate the test support directory for your project, e.g. `test/support`, and
 create the following files:
@@ -156,9 +227,9 @@ create the following files:
 
 #include "uart.h"
 
-#define UNITY_OUTPUT_START()       uart_init()
+#define UNITY_OUTPUT_START()       uart_start()
 #define UNITY_OUTPUT_CHAR(c)       uart_putchar(c)
-#define UNITY_OUTPUT_COMPLETE()    uart_deinit()
+#define UNITY_OUTPUT_COMPLETE()    uart_stop()
 
 #endif /* UNITY_CONFIG_H */
 ```
@@ -168,8 +239,8 @@ create the following files:
 #ifndef UART_H
 #define UART_H
 
-void uart_init(void);
-void uart_deinit(void);
+void uart_start(void);
+void uart_stop(void);
 int uart_putchar(int c);
 
 #endif /* UART_H */
@@ -177,48 +248,52 @@ int uart_putchar(int c);
 
 ##### **`uart.c`**
 ```c
+#include <stdbool.h>
+
 #include <xc.h>
 
 #include "uart.h"
 
-// Helper function where simulation will end
-static void uart_end()
-{
-  NOP();
-}
+void uart_end(void);
 
-void uart_init(void)
+void uart_start(void)
 {
-  // Init UART
-  // ...
-}
-
-void uart_deinit(void)
-{
-  // Wait for last TX to complete
-  // ...
-  // De-init UART
-  // ...
+	// Set up device clock
+	
+	// Set up UART
   
-  // Call function in which simulator will halt
-  uart_end();
+	// Enable UART and TX
+}
+
+void uart_stop(void)
+{
+	// Wait for last TX to complete
+	
+	// Optionally shutdown the UART
+	
+	// Breakpoint here to halt the program
+	uart_end();
+}
+
+void uart_end(void)
+{
+	while (true);
 }
 
 int uart_putchar(int c)
 {
-  // Wait for last TX to complete
-  // ...
-  // Write next character to TX data register
-  // ...
-  
-  return c;
+	// Wait for UART to be ready to accept more TX data
+	
+	// Write TX data
+	
+	return c;
 }
 
-// If you want to use printf() and similar functions, define also the putch()
-// function
+// For XC8 projects, define the putch() function if you want to use printf like
+// functions.
 void putch(char c)
 {
-  (void) uart_putchar(c);
+	(void) uart_putchar(c);
 }
 ```
 
@@ -257,42 +332,54 @@ e.g.:
     - uart_end
 ```
 
+### Simulator
+
+By default the plugin will setup **mdb** to use **sim** (simulator) as the
+**hwtool** and to redirect **UART 1** output to *stdout*.
+
+You just need to run your tests as usually. *e.g.*:
+
+```shell
+$ ceedling test:all
+```
+
+For XC8 projects, extra setup must be carried out so tests output is redirected
+to an UART and captured by the simulator.
+See [UART support](#uart-support) for more info.
+
+No known extra steps/setup required for XC16. XC-DSC and XXC32 projects.
+
 *Note: If you are using a PIC18 device, you may want to disable extended
 instruction set. See [Configuration bits](#configuration-bits) for more info.*
 
-#### XC16 projects
+### Target
 
-No known extra steps/setup required.
+Are you really sure to go this way?
 
-#### XC32 projects
+Running tests on target hardware requires quite bit more setup, you need a
+debugger or programming tool to get the tests run on the device but also, at
+least, a TX UART pin available to get the tests results.
 
-No known extra steps/setup required.
+Refer to the following sections to do the setup required:
 
-### Configuration bits
+- [Debug tool](#debug-tool)
+- [Serial port](#serial-port)
+- [Configuration bits](#configuration-bits)
+- [UART support](#uart-support)
 
-Some times it may be needed to set some configuration bits so the tests run
-properly, for example, disable extended instruction set for PIC18 devices as the
-XC8 compiler does not support it.
-
-Locate the test support directory for your project, e.g. `test/support`, and
-create a source files where configuration bits will be set.
+When you are done with all the setup, you can run the tests specifying both the
+debug tool to use and the serial port.
 e.g.:
 
-##### **`config_bits.c`**
-```c
-// Disable extended instruction set on PIC18 devices
-#pragma config XINST = OFF
+```shell
+ceedling mdb:hwtool[snap] mdb:serialport[/dev/ttyUSB0] test:all
 ```
 
-Add the test support path and file to `project.yml`.
-e.g.:
+And hopefully, if you got the setup right, after a while your tests will run and
+you may be able to see the results as normal.
 
-```yaml
-:paths:
-  :support:
-    - test/support
-
-:files:
-  :support:
-    - config_bits.c
-```
+It is possible to omit both `mdb:hwtool[]` and `mdb:serialport[]` tasks from the
+command if you have specified them on the configuration file, see
+[Debug tool](#debug-tool) and [Serial port](#serial-port) sections.
+But as it is likely that those options will change from time to time, it is
+recommended to specify them on the command line.
