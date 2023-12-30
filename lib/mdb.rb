@@ -9,7 +9,12 @@ MDB_OUTPUT_PATH     = File.join(PROJECT_BUILD_ROOT, MDB_ROOT_NAME)
 MDB_FIXTURE_PATH    = File.expand_path(File.join(File.dirname(__FILE__), '..', 'bin')).freeze
 MDB_FIXTURE_SCRIPT  = 'mdb_fixture.rb'.freeze
 MDB_FIXTURE         = File.join(MDB_FIXTURE_PATH, MDB_FIXTURE_SCRIPT).freeze
-MDB_CMD_FILE_SUFFIX = '_cmd.txt'.freeze
+
+MDB_CMD_FILE_SUFFIX = 'cmd'.freeze
+MDB_CMD_FILE_EXT    = '.txt'.freeze
+
+MDB_LOG_FILE_SUFFIX = 'log'.freeze
+MDB_LOG_FILE_EXT    = '.xml'.freeze
 
 class Mdb < Plugin
   def setup
@@ -51,10 +56,6 @@ class Mdb < Plugin
     @ceedling[:configurator].build_supplement(project_config, {:mdb => @config})
   end
   
-  def form_cmd_filepath(filepath)
-    return File.join(MDB_OUTPUT_PATH, File.basename(filepath, '.*') + MDB_CMD_FILE_SUFFIX)
-  end
-  
   def pre_test_fixture_execute(arg_hash)
     return unless @config[:test_fixture]
     
@@ -80,7 +81,12 @@ class Mdb < Plugin
     end
     
     mdb_command = @ceedling[:tool_executor].build_command_line(
-      @tool, [], form_cmd_filepath(arg_hash[:executable])
+      @tool,
+      [
+        "--file-name #{form_log_filename(@config[:hwtool])}",
+        "--log-dir #{PROJECT_LOG_PATH}"
+      ],
+      form_cmd_filepath(arg_hash[:executable])
     )
     @fixture[:arguments] << '--' << mdb_command[:line]
     
@@ -96,13 +102,24 @@ class Mdb < Plugin
   
   private
   
+  def form_cmd_filepath(filepath)
+    return File.join(
+      MDB_OUTPUT_PATH,
+      [File.basename(filepath, '.*'), MDB_CMD_FILE_SUFFIX].join('_')
+    ).ext(MDB_CMD_FILE_EXT)
+  end
+  
+  def form_log_filename(hwtool)
+    return [MDB_ROOT_NAME, hwtool, MDB_LOG_FILE_SUFFIX].join("_").ext(MDB_LOG_FILE_EXT)
+  end
+  
   def write_command_file(exec)
     cmd_file = form_cmd_filepath(exec)
-    @ceedling[:streaminator].stdout_puts("Creating #{cmd_file}...", Verbosity::NORMAL)
+    @ceedling[:streaminator].stdout_puts("Creating #{File.basename(cmd_file)}...", Verbosity::NORMAL)
     
     device = @config[:device]
     hwtool = @config[:hwtool]
-    tool_properties = @config[:hwtools_properties].fetch(hwtool.to_sym, {})
+    tool_properties = @config[:tools].fetch(hwtool.to_sym, {})
     breakpoints = @config[:breakpoints]
     timeout = @config[:timeout].nil? ? '' : " #{@config[:timeout]}"
     
