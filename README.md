@@ -37,6 +37,14 @@ $ cd <your-project>/vendor/ceedling/plugins
 $ git clone https://github.com/deltalejo/ceedling-mdb-plugin.git mdb
 ```
 
+This plugin requires the [`serialport`](https://rubygems.org/gems/serialport)
+gem to be installed.
+e.g.:
+
+```shell
+$ gem install serialport
+```
+
 ## Enable the plugin
 
 Add the plugins path to your `project.yml` if you have not done it yet.
@@ -372,7 +380,7 @@ debug tool to use and the serial port.
 e.g.:
 
 ```shell
-ceedling mdb:hwtool[snap] mdb:serialport[/dev/ttyUSB0] test:all
+$ ceedling mdb:hwtool[snap] mdb:serialport[/dev/ttyUSB0] test:all
 ```
 
 And hopefully, if you got the setup right, after a while your tests will run and
