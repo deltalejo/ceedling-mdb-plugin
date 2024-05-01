@@ -17,11 +17,11 @@ MDB_LOG_FILE_EXT    = '.xml'.freeze
 
 class Mdb < Plugin
   def setup
-    project_config = @ceedling[:setupinator].config_hash
+    @project_config = @ceedling[:setupinator].config_hash
     
-    @config = project_config[MDB_SYM]
-    @tool = project_config[:tools][MDB_SYM]
-    @fixture = project_config[:tools][MDB_FIXTURE_SYM]
+    @config = @project_config[MDB_SYM]
+    @tool = @project_config[:tools][MDB_SYM]
+    @fixture = @project_config[:tools][MDB_FIXTURE_SYM]
     
     raise unless @ceedling[:configurator_validator].exists?(@config, :device)
     raise unless @ceedling[:configurator_validator].exists?(@config, :hwtool)
@@ -39,13 +39,12 @@ class Mdb < Plugin
       }
     }
     mdb_config[:tools][:test_fixture] = @fixture if @config[:test_fixture]
-    @ceedling[:configurator].build_supplement(project_config, mdb_config)
+    @ceedling[:configurator].build_supplement(@project_config, mdb_config)
   end
   
   def update_config(**kwargs)
     @config.deep_merge!(kwargs)
-    project_config = @ceedling[:setupinator].config_hash
-    @ceedling[:configurator].build_supplement(project_config, {:mdb => @config})
+    @ceedling[:configurator].build_supplement(@project_config, {:mdb => @config})
   end
   
   def pre_test_fixture_execute(arg_hash)
@@ -82,8 +81,8 @@ class Mdb < Plugin
     )
     @fixture[:arguments] << '--' << mdb_command[:line]
     
-    @ceedling[:streaminator].stdout_puts("MDB command: #{mdb_command}", Verbosity::DEBUG)
-    @ceedling[:streaminator].stdout_puts("MDB fixture: #{@fixture}", Verbosity::DEBUG)
+    @ceedling[:streaminator].stream_puts("MDB command: #{mdb_command}", Verbosity::DEBUG)
+    @ceedling[:streaminator].stream_puts("MDB fixture: #{@fixture}", Verbosity::DEBUG)
   end
   
   def post_test_fixture_execute(arg_hash)
@@ -107,7 +106,7 @@ class Mdb < Plugin
   
   def write_command_file(exec)
     cmd_file = form_cmd_filepath(exec)
-    @ceedling[:streaminator].stdout_puts("Creating #{File.basename(cmd_file)}...", Verbosity::NORMAL)
+    @ceedling[:streaminator].stream_puts("Creating #{File.basename(cmd_file)}...", Verbosity::NORMAL)
     
     device = @config[:device]
     hwtool = @config[:hwtool]
