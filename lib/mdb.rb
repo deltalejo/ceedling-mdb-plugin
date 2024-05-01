@@ -1,5 +1,4 @@
 require 'ceedling/plugin'
-require 'mdb_defaults'
 
 MDB_ROOT_NAME       = 'mdb'.freeze
 MDB_SYM             = MDB_ROOT_NAME.to_sym
@@ -19,13 +18,6 @@ MDB_LOG_FILE_EXT    = '.xml'.freeze
 class Mdb < Plugin
   def setup
     project_config = @ceedling[:setupinator].config_hash
-    mdb_defaults = {
-      :tools => {
-        :mdb => DEFAULT_MDB_TOOL,
-        :mdb_fixture => DEFAULT_MDB_FIXTURE_TOOL
-      }
-    }
-    @ceedling[:configurator_builder].populate_defaults(project_config, mdb_defaults)
     
     @config = project_config[MDB_SYM]
     @tool = project_config[:tools][MDB_SYM]

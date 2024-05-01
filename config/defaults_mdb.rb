@@ -17,3 +17,10 @@ DEFAULT_MDB_FIXTURE_TOOL = {
     '#{MDB_FIXTURE}'.freeze
   ].freeze
 }
+
+def get_default_config()
+  return :tools => {
+    :mdb => DEFAULT_MDB_TOOL,
+    :mdb_fixture => DEFAULT_MDB_FIXTURE_TOOL
+  }
+end
