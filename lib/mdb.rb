@@ -81,8 +81,8 @@ class Mdb < Plugin
     )
     @fixture[:arguments] << '--' << mdb_command[:line]
     
-    @ceedling[:streaminator].stream_puts("MDB command: #{mdb_command}", Verbosity::DEBUG)
-    @ceedling[:streaminator].stream_puts("MDB fixture: #{@fixture}", Verbosity::DEBUG)
+    @ceedling[:loginator].log("MDB command: #{mdb_command}", Verbosity::DEBUG)
+    @ceedling[:loginator].log("MDB fixture: #{@fixture}", Verbosity::DEBUG)
   end
   
   def post_test_fixture_execute(arg_hash)
@@ -106,7 +106,7 @@ class Mdb < Plugin
   
   def write_command_file(exec)
     cmd_file = form_cmd_filepath(exec)
-    @ceedling[:streaminator].stream_puts("Creating #{File.basename(cmd_file)}...", Verbosity::NORMAL)
+    @ceedling[:loginator].log("Creating #{File.basename(cmd_file)}...", Verbosity::NORMAL)
     
     device = @config[:device]
     hwtool = @config[:hwtool]
