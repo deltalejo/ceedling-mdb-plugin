@@ -16,7 +16,6 @@ project and run your tests on the simulator (and maybe the target).
 	- [Simulator options](#simulator-options)
 	- [Breakpoints](#breakpoints)
 	- [Timeout](#timeout)
-	- [Disable test fixture](#disable-test-fixture)
 	- [Debug tool](#debug-tool)
 	- [Serial port](#serial-port)
 - [Usage](#usage)
@@ -57,6 +56,9 @@ Then add **mdb** plugin to the enabled plugins list:
   :enabled:
     - mdb
 ```
+
+When the plugin is enabled, it will overwrite test fixture tool with its own, so
+the tests are run within MDB.
 
 ## Configuration
 
@@ -127,17 +129,6 @@ e.g.:
 ```yaml
 :mdb:
   :timeout: 10000 # Timeout in milliseconds
-```
-
-### Disable test fixture
-
-By default, the plugin overwrites the test fixture tool with its own, so the
-tests are run automatically on the simulator. If for some reason tha is not
-desired, the test fixture overwrite can be disabled:
-
-```yaml
-:mdb:
-  :test_fixture: false
 ```
 
 ### Debug tool
