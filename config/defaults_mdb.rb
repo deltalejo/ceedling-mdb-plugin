@@ -13,9 +13,7 @@ DEFAULT_MDB_FIXTURE_TOOL = {
   :name => 'default_mdb_fixture'.freeze,
   :stderr_redirect => StdErrRedirect::NONE.freeze,
   :optional => false.freeze,
-  :arguments => [
-    '#{MDB_FIXTURE}'.freeze
-  ].freeze
+  :arguments => [].freeze
 }
 
 def get_default_config()
