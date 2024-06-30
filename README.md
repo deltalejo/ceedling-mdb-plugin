@@ -23,6 +23,7 @@ project and run your tests on the simulator (and maybe the target).
 	- [UART support](#uart-support)
 	- [Simulator](#simulator)
 	- [Target](#target)
+- [Examples](#examples)
 
 <!-- /TOC -->
 
@@ -382,3 +383,12 @@ command if you have specified them on the configuration file, see
 [Debug tool](#debug-tool) and [Serial port](#serial-port) sections.
 But as it is likely that those options will change from time to time, it is
 recommended to specify them on the command line.
+
+## Examples
+
+Sample projects:
+
+- [XC8](https://github.com/deltalejo/ceedling-microchip-xc8-example).
+- [XC16](https://github.com/deltalejo/ceedling-microchip-xc16-example).
+- [XC32](https://github.com/deltalejo/ceedling-microchip-xc32-example).
+- [XC-DSC](https://github.com/deltalejo/ceedling-microchip-xc-dsc-example).
