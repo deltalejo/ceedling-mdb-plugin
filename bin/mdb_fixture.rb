@@ -35,9 +35,8 @@ end.parse!(serialport_args, into: options)
 raise OptionParser::MissingArgument, 'mdb' if mdb_args.empty?
 
 Open3.popen3(*mdb_args) do |mdb_in, mdb_out, mdb_err, mdb_thr|
-  Thread.new do
-    until mdb_out.eof?
-      line = mdb_out.gets
+  stdout_thr = Thread.new do
+    mdb_out.each do |line|
       $stdout << line
       if line =~ /[[:alpha:]]+ you [[:alpha:]]+ to continue\?/i
         answer = (line =~ /Target device ID \(.*?\) is an invalid device ID/i)? 'no' : 'yes'
@@ -46,21 +45,21 @@ Open3.popen3(*mdb_args) do |mdb_in, mdb_out, mdb_err, mdb_thr|
     end
   end
   
-  Thread.new do
-    until mdb_err.eof?
-      $stderr << mdb_err.gets
-    end
+  stderr_thr = Thread.new do
+    mdb_err.each {|line| $stderr << line}
   end
   
   if port = options.delete(:port)
     options.transform_keys! {|key| key.to_s}
     serial_thr = Thread.new do
       SerialPort.open(port, options) do |sp|
-        $stdout << sp.gets while true
+        sp.each {|line| $stdout << line}
       end
     end
   end
   
   mdb_thr.join
-  serial_thr.kill unless serial_thr.nil?
+  stdout_thr.join
+  stderr_thr.join
+  serial_thr.terminate.join unless serial_thr.nil?
 end
