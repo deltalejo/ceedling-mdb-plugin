@@ -64,7 +64,7 @@ class Mdb < Plugin
     
     write_command_file(executable)
     
-    arg_hash[:tool] = TOOLS_MDB_FIXTURE
+    arg_hash[:tool] = TOOLS_MDB_FIXTURE.clone
     arg_hash[:tool][:arguments] = args_builder_fixture(executable)
   end
   
