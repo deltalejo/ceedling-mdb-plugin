@@ -8,30 +8,30 @@ PARITIES = {
   :none => SerialPort::NONE,
   :even => SerialPort::EVEN,
   :odd => SerialPort::ODD
-}
+}.freeze
 
-options = {
+DEFAULT_OPTIONS = {
   :baud => 115200,
   :data_bits => 8,
   :stop_bits => 1,
   :parity => SerialPort::NONE
-}
+}.freeze
 
-serialport_args = ARGV.take_while {|item| item.strip != "--"}
-mdb_args = ARGV[(serialport_args.length + 1)..-1]
+options = DEFAULT_OPTIONS.dup
 
 OptionParser.new do |parser|
-  parser.banner = "Usage: #{File.basename($0)} [options] -- <mdb> [mdb arguments]"
+  parser.banner = "Usage: #{File.basename($0)} [options] -- mdb [mdb arguments]"
   
   parser.on('--port [PORT]', String)
-  parser.on('--baud [BAUDRATE]', Integer)
-  parser.on('--data_bits [DATA BITS]', Integer)
-  parser.on('--stop_bits [STOP BITS]', Integer)
-  parser.on('--parity [PARITY]') do |parity|
+  parser.on('--baud [BAUDRATE]', "Default: #{DEFAULT_OPTIONS[:baud]}", Integer)
+  parser.on('--data_bits [DATA BITS]', "Default: #{DEFAULT_OPTIONS[:data_bits]}", Integer)
+  parser.on('--stop_bits [STOP BITS]', "Default: #{DEFAULT_OPTIONS[:stop_bits]}", Integer)
+  parser.on('--parity [PARITY]', "Default: #{DEFAULT_OPTIONS[:parity]}", PARITIES.keys) do |parity|
     options[:parity] = PARITIES[parity.to_sym]
   end
-end.parse!(serialport_args, into: options)
+end.parse!(into: options)
 
+mdb_args = ARGV
 raise OptionParser::MissingArgument, 'mdb' if mdb_args.empty?
 
 Open3.popen3(*mdb_args) do |mdb_in, mdb_out, mdb_err, mdb_thr|
