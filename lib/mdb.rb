@@ -16,10 +16,17 @@ MDB_LOG_FILE_EXT    = '.xml'.freeze
 
 class Mdb < Plugin
   def setup
-    project_config = @ceedling[:setupinator].config_hash
+    @configurator_validator = @ceedling[:configurator_validator]
+    @loginator = @ceedling[:loginator]
+    @reportinator = @ceedling[:reportinator]
+    @setupinator = @ceedling[:setupinator]
+    @system_wrapper = @ceedling[:system_wrapper]
+    @tool_executor = @ceedling[:tool_executor]
     
-    unless @ceedling[:configurator_validator].exists?(project_config, MDB_SYM)
-      walk = @ceedling[:reportinator].generate_config_walk([MDB_SYM])
+    project_config = @setupinator.config_hash
+    
+    unless @configurator_validator.exists?(project_config, MDB_SYM)
+      walk = @reportinator.generate_config_walk([MDB_SYM])
       error = "MDB plugin is enabled but missing the required configuration block `#{walk}`"
       raise CeedlingException.new(error)
     end
@@ -31,7 +38,7 @@ class Mdb < Plugin
     [:device, :hwtool].each do |key|
       if @config[key] =~ RUBY_STRING_REPLACEMENT_PATTERN
         @config[key].replace(
-          @ceedling[:system_wrapper].module_eval(@config[key])
+          @system_wrapper.module_eval(@config[key])
         )
       end
     end
@@ -72,14 +79,14 @@ class Mdb < Plugin
   
   def validate_config(config)
     unless config.is_a?(Hash)
-      walk = @ceedling[:reportinator].generate_config_walk([MDB_SYM])
+      walk = @reportinator.generate_config_walk([MDB_SYM])
       error = "Expected configuration #{walk} to be a Hash but found #{config.class}"
       raise CeedlingException.new(error)
     end
     
     validations = []
-    validations << @ceedling[:configurator_validator].exists?(@config, :device)
-    validations << @ceedling[:configurator_validator].exists?(@config, :hwtool)
+    validations << @configurator_validator.exists?(@config, :device)
+    validations << @configurator_validator.exists?(@config, :hwtool)
     
     unless validations.all?
       error = "MDB plugin configuration failed validation"
@@ -89,9 +96,9 @@ class Mdb < Plugin
   
   def validate_late_config()
     validations = []
-    validations << @ceedling[:configurator_validator].exists?(@config, :hwtool)
+    validations << @configurator_validator.exists?(@config, :hwtool)
     if @config[:hwtool] != "sim"
-      validations << @ceedling[:configurator_validator].exists?(@config, :serialport, :port)
+      validations << @configurator_validator.exists?(@config, :serialport, :port)
     end
     
     unless validations.all?
@@ -143,7 +150,7 @@ class Mdb < Plugin
       args += args_builder_serialport()
     end
     
-    mdb_command = @ceedling[:tool_executor].build_command_line(
+    mdb_command = @tool_executor.build_command_line(
       TOOLS_MDB,
       args_builder_mdb(),
       form_cmd_filepath(executable)
@@ -156,7 +163,7 @@ class Mdb < Plugin
   
   def write_command_file(filename)
     cmd_file = form_cmd_filepath(filename)
-    @ceedling[:loginator].log("Creating #{File.basename(cmd_file)}...")
+    @loginator.log("Creating #{File.basename(cmd_file)}...")
     
     device = @config[:device]
     hwtool = @config[:hwtool]
