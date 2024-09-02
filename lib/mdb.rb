@@ -33,15 +33,8 @@ class Mdb < Plugin
     
     @config = project_config[MDB_SYM]
     
-    validate_config(@config)
-    
-    [:device, :hwtool].each do |key|
-      if @config[key] =~ RUBY_STRING_REPLACEMENT_PATTERN
-        @config[key].replace(
-          @system_wrapper.module_eval(@config[key])
-        )
-      end
-    end
+    validate_config()
+    evaluate_config()
   end
   
   def set_hwtool(hwtool)
@@ -72,15 +65,15 @@ class Mdb < Plugin
     write_command_file(executable)
     
     arg_hash[:tool] = TOOLS_MDB_FIXTURE.clone
-    arg_hash[:tool][:arguments] = args_builder_fixture(executable)
+    arg_hash[:tool][:arguments] = opts_builder_fixture(executable)
   end
   
   private
   
-  def validate_config(config)
-    unless config.is_a?(Hash)
+  def validate_config()
+    unless @config.is_a?(Hash)
       walk = @reportinator.generate_config_walk([MDB_SYM])
-      error = "Expected configuration #{walk} to be a Hash but found #{config.class}"
+      error = "Expected configuration #{walk} to be a Hash but found #{@config.class}"
       raise CeedlingException.new(error)
     end
     
@@ -107,6 +100,31 @@ class Mdb < Plugin
     end
   end
   
+  def traverse_config_eval_strings(config)
+    case config
+      when String
+        if (config =~ RUBY_STRING_REPLACEMENT_PATTERN)
+          config.replace(@system_wrapper.module_eval(config))
+        end
+      when Array
+        if config.all? {|item| item.is_a?(String)}
+          config.each do |item|
+            if (item =~ RUBY_STRING_REPLACEMENT_PATTERN)
+              item.replace(@system_wrapper.module_eval(item))
+            end
+          end
+        end
+      when Hash
+        config.each_value {|value| traverse_config_eval_strings(value)}
+      end
+  end
+  
+  def evaluate_config()
+    @config.each_value do |item|
+      traverse_config_eval_strings(item)
+    end
+  end
+  
   def form_cmd_filepath(filepath)
     return File.join(
       MDB_OUTPUT_PATH,
@@ -118,14 +136,16 @@ class Mdb < Plugin
     return [MDB_ROOT_NAME, hwtool, MDB_LOG_FILE_SUFFIX].join("_").ext(MDB_LOG_FILE_EXT)
   end
   
-  def args_builder_mdb()
-    return [
+  def opts_builder_mdb()
+    opts = [
       "--log-dir #{PROJECT_LOG_PATH}",
       "--file-name #{form_log_filename(@config[:hwtool])}"
     ]
+    
+    return opts
   end
   
-  def args_builder_serialport()
+  def opts_builder_serialport()
     serialport_params = {
       :port => @config[:serialport][:port],
       :baud => @config[:serialport][:baudrate],
@@ -133,32 +153,31 @@ class Mdb < Plugin
       :stop_bits => @config[:serialport][:stop_bits],
       :parity => @config[:serialport][:parity]
     }
-    args = []
     
-    serialport_params.each do |key, val|
-      args << "--#{key} #{val}"
+    opts = serialport_params.map do |key, val|
+      "--#{key} #{val}"
     end
     
-    return args
+    return opts
   end
   
-  def args_builder_fixture(executable)
+  def opts_builder_fixture(executable)
     mdb_fixture_filepath = File.join(MDB_FIXTURE_PATH, MDB_FIXTURE_SCRIPT)
-    args = [mdb_fixture_filepath]
+    opts = [mdb_fixture_filepath]
     
     if @config[:hwtool] != 'sim'
-      args += args_builder_serialport()
+      opts += opts_builder_serialport()
     end
     
     mdb_command = @tool_executor.build_command_line(
       TOOLS_MDB,
-      args_builder_mdb(),
+      opts_builder_mdb(),
       form_cmd_filepath(executable)
     )
     
-    args << '--' << mdb_command[:line]
+    opts << '--' << mdb_command[:line]
     
-    return args
+    return opts
   end
   
   def write_command_file(filename)
