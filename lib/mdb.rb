@@ -1,3 +1,4 @@
+require 'ceedling/constants'
 require 'ceedling/exceptions'
 require 'ceedling/plugin'
 
@@ -103,13 +104,13 @@ class Mdb < Plugin
   def traverse_config_eval_strings(config)
     case config
       when String
-        if (config =~ RUBY_STRING_REPLACEMENT_PATTERN)
+        if (config =~ PATTERNS::RUBY_STRING_REPLACEMENT)
           config.replace(@system_wrapper.module_eval(config))
         end
       when Array
         if config.all? {|item| item.is_a?(String)}
           config.each do |item|
-            if (item =~ RUBY_STRING_REPLACEMENT_PATTERN)
+            if (item =~ PATTERNS::RUBY_STRING_REPLACEMENT)
               item.replace(@system_wrapper.module_eval(item))
             end
           end
